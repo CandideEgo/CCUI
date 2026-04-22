@@ -8,7 +8,7 @@ import sys
 import json
 from pathlib import Path
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 # Windows UTF-8 support
 if sys.platform == "win32":

@@ -1,90 +1,93 @@
-# Claude Code 状态栏
+# Claude Code Status Bar
 
-> 显示模型、用量进度条、百分比的 Claude Code 状态栏工具
-
-## 效果预览
+**一眼看清上下文余量，不再盲等 Claude 报 "context window" 错误。**
 
 ```
 MiniMax-M2.7 │ 48K/200K │ [▓▓░░░░░░░░] 24%
 ```
 
-颜色提示：
-- 绿色：< 50%
-- 黄色：50% - 80%
-- 红色：> 80%
+视觉化显示 token 用量和进度条，**绿/黄/红三色**实时预警上下文消耗。
 
-## 快速开始
+---
 
-### Windows
+## 安装（30 秒）
 
+**Windows:**
 ```powershell
 .\scripts\install.ps1
 ```
 
-### macOS / Linux / Git Bash
-
+**macOS / Linux:**
 ```bash
 bash scripts/install.sh
 ```
 
-安装脚本会自动：
-1. 复制脚本到 `~/.claude/statusline/` 目录
-2. 配置 `settings.json` 中的 `statusLine` 选项
-3. 重启 Claude Code 即可生效
-
-**重要：安装后需要运行初始化脚本捕获基准值**（确保 `/clear` 后显示正确）：
-```powershell
-python .claude/statusline/init_baseline.py
+安装后运行基准值初始化，确保 `/clear` 后显示正确：
+```bash
+python ~/.claude/statusline/init_baseline.py
 ```
 
-详细安装说明请查看 [安装指南](docs/setup-guide.md)。
+---
 
-## 功能
+## 解决什么问题
 
-- 显示当前模型名称
-- 显示上下文用量进度条
-- 百分比颜色提示（绿/黄/红）
-- 跨平台支持（Windows/macOS/Linux）
-- 支持自定义颜色阈值
-- 基准值追踪（`/clear` 后仍显示正确百分比）
-- 保留调试脚本，方便排查问题
+Claude Code 不显示上下文用量——你只能靠它报错才知道用完了。
+
+本工具在状态栏实时展示：
+- 当前模型
+- 已用 / 总容量
+- 进度条 + 百分比
+- 用量颜色预警（绿 < 50% | 黄 50-80% | 红 > 80%）
+
+---
+
+## 技术细节
+
+**架构**：Claude Code 定时执行 shell 命令，通过 stdin 传入 JSON 会话上下文，脚本解析后输出纯文本渲染到状态栏。
+
+**三个核心文件**：
+| 文件 | 作用 |
+|------|------|
+| `status.py` | 主脚本，解析 JSON → 输出进度条 |
+| `debug.py` | 调试用，记录原始 JSON 方便排查 |
+| `init_baseline.py` | 捕获基准值，用于 /clear 后正确显示 |
+
+**基准值设计**：通过 `/context` 抓取 Free space% 和 Autocompact buffer%，计算 `baseline = 100% - free% - auto%`。这样 `/clear` 把用量重置为 0 时，状态栏仍显示准确的基准消耗。
+
+**跨平台**：Windows (PowerShell) / macOS / Linux / Git Bash 均支持。
+
+---
+
+## 自定义
+
+颜色阈值可在 `~/.claude/statusline/config.json` 配置：
+
+```json
+{
+  "thresholds": {
+    "green": 50,
+    "yellow": 80
+  }
+}
+```
+
+---
 
 ## 项目结构
 
 ```
-claude-statusline/
-├── status.py              # 正式状态栏脚本
-├── debug.py               # 调试脚本
+CCUI-master/
+├── status.py              # 主脚本
+├── debug.py               # 调试日志
 ├── scripts/
-│   ├── install.sh         # Unix 安装脚本
-│   ├── install.ps1        # Windows 安装脚本
-│   └── init_baseline.py   # 基准值初始化脚本
+│   ├── install.ps1        # Windows 安装
+│   ├── install.sh        # Unix 安装
+│   └── init_baseline.py  # 基准值初始化
 └── docs/
-    ├── setup-guide.md     # 安装配置指南
-    ├── debug-method.md    # 日志调试法详解
-    ├── field-reference.md # 字段速查表
-    └── troubleshooting.md # 常见问题排查
+    ├── setup-guide.md     # 完整安装指南
+    ├── debug-method.md    # 调试方法
+    ├── field-reference.md # 字段参考
+    └── troubleshooting.md # 常见问题
 ```
 
-## 文档
-
-| 文档 | 说明 |
-|------|------|
-| [安装指南](docs/setup-guide.md) | 从零开始配置，包含各平台注意事项 |
-| [调试方法详解](docs/debug-method.md) | 使用日志法调试未知字段 |
-| [字段速查表](docs/field-reference.md) | Claude Code JSON 字段说明 |
-| [常见问题排查](docs/troubleshooting.md) | 问题与解决方案 |
-
-## 工作原理
-
-Claude Code 定时执行配置的 shell 命令，通过 stdin 传入 JSON 格式的会话上下文，命令输出的文本即显示在状态栏。
-
-本工具解析 JSON，提取 `model.id`、`context_window.used_percentage` 等字段，渲染为进度条和百分比显示。
-
-## 替代方案
-
-如果需要更复杂的功能（如 Powerline 风格、多 Segment 分离），可以参考 [CCometixLine](https://github.com/Haleclipse/CCometixLine)，一个 Rust 编写的状态栏工具。
-
-## License
-
-MIT
+详细文档见 `docs/` 目录。

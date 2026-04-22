@@ -59,6 +59,8 @@ def parse_context_output(output):
     system_prompt = 0
     system_tools = 0
     skills = 0
+    free_space_pct = 0.0
+    autocompact_pct = 0.0
     context_window = DEFAULT_CONTEXT_WINDOW
 
     # Parse context window from header like "**Tokens:** 22.5k / 200k"
@@ -78,6 +80,7 @@ def parse_context_output(output):
         (r'System prompt\s*\|\s*([\d.]+k)', 'system_prompt'),
         (r'System tools\s*\|\s*([\d.]+k)', 'system_tools'),
         (r'Skills\s*\|\s*([\d.]+k)', 'skills'),
+        (r'Skills\s*\|\s*(\d+)', 'skills'),
     ]
 
     for pattern, field in patterns:
@@ -100,10 +103,23 @@ def parse_context_output(output):
             elif field == 'skills':
                 skills = value
 
+    # Parse Free space and Autocompact buffer percentages
+    # Format in table: "| Free space | 152.3k | 76.2% |"
+    free_match = re.search(r'Free space\s*\|\s*[\d.k]+\s*\|\s*(\d+(?:\.\d+)?)%', output)
+    if free_match:
+        free_space_pct = float(free_match.group(1))
+
+    # Format in table: "| Autocompact buffer | 33k | 16.5% |"
+    auto_match = re.search(r'Autocompact buffer\s*\|\s*[\d.k]+\s*\|\s*(\d+(?:\.\d+)?)%', output)
+    if auto_match:
+        autocompact_pct = float(auto_match.group(1))
+
     return {
         "system_prompt_tokens": system_prompt,
         "system_tools_tokens": system_tools,
         "skills_tokens": skills,
+        "free_space_pct": free_space_pct,
+        "autocompact_pct": autocompact_pct,
         "context_window": context_window
     }
 
@@ -148,7 +164,9 @@ def main():
         parsed["skills_tokens"]
     )
     context_window = parsed.get("context_window", DEFAULT_CONTEXT_WINDOW)
-    baseline_pct = calculate_baseline_pct(total_tokens, context_window)
+
+    # Baseline = 100% - free_space_pct - autocompact_pct
+    baseline_pct = round(100.0 - parsed["free_space_pct"] - parsed["autocompact_pct"], 1)
 
     baseline_data = {
         "system_prompt_tokens": parsed["system_prompt_tokens"],
@@ -163,12 +181,13 @@ def main():
     if save_baseline(baseline_data):
         print("Baseline captured successfully!")
         print()
-        print(f"  System prompt: {parsed['system_prompt_tokens']} tokens")
-        print(f"  System tools:  {parsed['system_tools_tokens']} tokens")
-        print(f"  Skills:        {parsed['skills_tokens']} tokens")
+        print(f"  System prompt:   {parsed['system_prompt_tokens']} tokens")
+        print(f"  System tools:    {parsed['system_tools_tokens']} tokens")
+        print(f"  Skills:         {parsed['skills_tokens']} tokens")
         print(f"  ─────────────────────────────")
-        print(f"  Total:         {total_tokens} tokens")
-        print(f"  Baseline:      {baseline_pct}%")
+        print(f"  Total:          {total_tokens} tokens")
+        print(f"  Baseline:       {baseline_pct}%")
+        print(f"  (Free: {parsed['free_space_pct']}% + Auto: {parsed['autocompact_pct']}%)")
         print()
         print(f"Saved to: {BASELINE_FILE}")
     else:
