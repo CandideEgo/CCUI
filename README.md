@@ -22,10 +22,7 @@ MiniMax-M2.7 │ 48K/200K │ [▓▓░░░░░░░░] 24%
 bash scripts/install.sh
 ```
 
-安装后运行基准值初始化，确保 `/clear` 后显示正确：
-```bash
-python ~/.claude/statusline/init_baseline.py
-```
+安装后重启 Claude Code 即可看到状态栏。
 
 ---
 

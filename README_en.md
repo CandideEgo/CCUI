@@ -30,12 +30,8 @@ bash scripts/install.sh
 The installer will automatically:
 1. Copy scripts to `~/.claude/statusline/`
 2. Configure `statusLine` in `settings.json`
-3. Restart Claude Code to see the status bar
-
-**Important: Run the initialization script after installation** (ensures correct display after `/clear`):
-```bash
-python ~/.claude/statusline/init_baseline.py
-```
+3. Capture baseline token usage for accurate display after `/clear`
+4. Restart Claude Code to see the status bar
 
 For detailed instructions, see [Setup Guide](docs/setup-guide.md).
 

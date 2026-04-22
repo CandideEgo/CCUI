@@ -71,6 +71,16 @@ EOF
 
 configure_settings
 
+# Auto-run baseline initialization
+echo ""
+echo "Running baseline initialization..."
+if "$PYTHON_CMD" "$STATUSLINE_DIR/init_baseline.py"; then
+    echo "Baseline captured successfully!"
+else
+    echo "Baseline initialization failed (Claude Code may not be configured yet)."
+    echo "You can run: $PYTHON_CMD $STATUSLINE_DIR/init_baseline.py"
+fi
+
 echo ""
 echo "Installation complete!"
 echo "Restart Claude Code to see the status bar."

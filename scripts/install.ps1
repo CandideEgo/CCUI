@@ -81,11 +81,19 @@ function Configure-Settings {
 
 Configure-Settings
 
+# Auto-run baseline initialization
+Write-Host ""
+Write-Host "Running baseline initialization..." -ForegroundColor Cyan
+& $PythonCmd "$StatuslineDir\init_baseline.py"
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Baseline captured successfully!" -ForegroundColor Green
+} else {
+    Write-Host "Baseline initialization failed (Claude Code may not be configured yet)." -ForegroundColor Yellow
+    Write-Host "You can run: python `"$StatuslineDir\init_baseline.py`"" -ForegroundColor Yellow
+}
+
 Write-Host ""
 Write-Host "Installation complete!" -ForegroundColor Green
 Write-Host "Restart Claude Code to see the status bar."
 Write-Host ""
 Write-Host "Debug: Logs are written to $StatuslineDir\debug.log"
-Write-Host ""
-Write-Host "IMPORTANT: Run the baseline capture to initialize your token baseline:"
-Write-Host "  python `"$StatuslineDir\init_baseline.py`"" -ForegroundColor Yellow
