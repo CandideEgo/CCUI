@@ -1,4 +1,4 @@
-# Claude Code 自定义状态栏
+# Claude Code 状态栏
 
 > 显示模型、用量进度条、百分比的 Claude Code 状态栏工具
 
