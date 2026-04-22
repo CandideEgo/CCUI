@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Check Python syntax
+        run: |
+          python -m py_compile status.py
+          python -m py_compile debug.py
+          python -m py_compile scripts/init_baseline.py
+
+      - name: Test status.py with sample input
+        run: |
+          echo '{"model": {"id": "test"}, "context_window": {"used_percentage": 50, "context_window_size": 200000, "current_usage": null}}' | python status.py
