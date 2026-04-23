@@ -18,7 +18,8 @@ if sys.platform == "win32":
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
-DEFAULT_CONTEXT_WINDOW = 200000  # Default context window
+# Shared constants with status.py
+DEFAULT_CONTEXT_WINDOW = 200000
 BASELINE_FILE = Path.home() / ".claude" / "statusline" / "baseline.json"
 
 # Pre-compiled regex patterns
@@ -78,7 +79,6 @@ def parse_context_output(output):
     autocompact_pct = 0.0
     context_window = DEFAULT_CONTEXT_WINDOW
 
-    # Parse context window from header like "**Tokens:** 22.5k / 200k"
     match = RE_CONTEXT_WINDOW.search(output)
     if match:
         cw_text = match.group(1).strip()
@@ -90,7 +90,6 @@ def parse_context_output(output):
             except ValueError:
                 context_window = DEFAULT_CONTEXT_WINDOW
 
-    # Parse table format: | System prompt | 5.9k | 3.0% |
     for pattern, field in [(RE_SYSTEM_PROMPT, 'system_prompt'),
                             (RE_SYSTEM_TOOLS, 'system_tools'),
                             (RE_SKILLS_K, 'skills'),
@@ -114,7 +113,6 @@ def parse_context_output(output):
             elif field == 'skills':
                 skills = value
 
-    # Parse Free space and Autocompact buffer percentages
     free_match = RE_FREE_SPACE.search(output)
     if free_match:
         free_space_pct = float(free_match.group(1))
@@ -131,11 +129,6 @@ def parse_context_output(output):
         "autocompact_pct": autocompact_pct,
         "context_window": context_window
     }
-
-
-def calculate_baseline_pct(total_tokens, context_window=DEFAULT_CONTEXT_WINDOW):
-    """Calculate baseline percentage from total tokens."""
-    return round((total_tokens / context_window) * 100, 1)
 
 
 def save_baseline(data):
@@ -174,7 +167,6 @@ def main():
     )
     context_window = parsed.get("context_window", DEFAULT_CONTEXT_WINDOW)
 
-    # Baseline = 100% - free_space_pct - autocompact_pct
     baseline_pct = round(100.0 - parsed["free_space_pct"] - parsed["autocompact_pct"], 1)
 
     baseline_data = {
