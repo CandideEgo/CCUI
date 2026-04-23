@@ -8,7 +8,7 @@ import sys
 import json
 from pathlib import Path
 
-VERSION = "1.1.0"
+VERSION = "1.0.0"
 
 # Windows UTF-8 support
 if sys.platform == "win32":
@@ -57,12 +57,10 @@ def load_config():
 def load_cache():
     """Load cached status data from previous run."""
     try:
-        if CACHE_FILE.exists():
-            with open(CACHE_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+        with open(CACHE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
     except Exception:
-        pass
-    return None
+        return None
 
 
 def save_cache(info):
@@ -78,12 +76,10 @@ def save_cache(info):
 def load_baseline():
     """Load baseline data from baseline.json."""
     try:
-        if BASELINE_FILE.exists():
-            with open(BASELINE_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+        with open(BASELINE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
     except Exception:
-        pass
-    return None
+        return None
 
 
 def parse_input(stdin_data, cache=None, baseline=None):
@@ -96,27 +92,23 @@ def parse_input(stdin_data, cache=None, baseline=None):
     usage = cw.get("current_usage") or {}
     context_limit = cw.get("context_window_size", 200000)
 
-    # Calculate usage based on percentage (syncs with /clear)
+    # Get raw used_pct from Claude Code
     used_pct = cw.get("used_percentage")
-
-    # Normalize used_pct
     if used_pct is None:
         used_pct = 0
-    # Use cache if available for same session
-    elif used_pct == 0 and cache is not None:
-        cached_session = cache.get("session_id")
-        if cached_session == session_id:
-            used_pct = cache.get("used_pct", 0)
 
-    # Use baseline when used_pct is 0 (e.g., after /clear)
+    # 1. New window or after /clear: used_pct is 0, use baseline
     if used_pct == 0 and baseline is not None:
         used_pct = baseline.get("baseline_pct", 0)
 
-    total_tokens = round(context_limit * used_pct / 100)
+    # 2. Anti-rollback: if current value < cached value, keep cache (only increase)
+    if cache is not None:
+        cached_session = cache.get("session_id")
+        cached_pct = cache.get("used_pct", 0)
+        if cached_session == session_id and used_pct < cached_pct:
+            used_pct = cached_pct
 
-    current_input = usage.get("input_tokens", 0) or 0
-    current_output = usage.get("output_tokens", 0) or 0
-    current_tokens = current_input + current_output
+    total_tokens = round(context_limit * used_pct / 100)
 
     return {
         "session_id": session_id,
@@ -124,7 +116,6 @@ def parse_input(stdin_data, cache=None, baseline=None):
         "context_limit": context_limit,
         "used_pct": used_pct,
         "total_tokens": total_tokens,
-        "current_tokens": current_tokens,
     }
 
 
